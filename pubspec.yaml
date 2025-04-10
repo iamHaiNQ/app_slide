@@ -1,0 +1,36 @@
+name: lap26_3
+description: "A new Flutter project."
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.3 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  bloc:
+  flutter_bloc:
+  cached_network_image:
+  just_audio:
+  better_player:
+    git: 'https://github.com/afrahshaikh/even_better_player.git'
+  youtube_player_flutter: ^9.0.4
+  html:
+  google_fonts:
+  cupertino_icons: ^1.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+
+
+# The following section is specific to Flutter packages.
+flutter:
+  uses-material-design: true
+  assets:
+      - assets/
