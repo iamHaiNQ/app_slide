@@ -24,7 +24,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> loadSlides() async {
     try {
-      String jsonString = await rootBundle.loadString('assets/testDefaul.json');
+      String jsonString = await rootBundle.loadString('assets/testImageRange.json');
       List<dynamic> jsonData = jsonDecode(jsonString);
       setState(() {
         slides = jsonData.map((json) => Slide.fromJson(json)).toList();

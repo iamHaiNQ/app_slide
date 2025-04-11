@@ -3,6 +3,7 @@ import 'package:better_player/better_player.dart';
 import 'package:flutter/material.dart';
 import 'package:lap26_3/model/Slide.dart';
 import 'package:lap26_3/utils/color_utils.dart';
+import 'package:lap26_3/widget/image_widget.dart';
 import 'package:lap26_3/widget/text_widget.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import 'package:just_audio/just_audio.dart';
@@ -159,9 +160,11 @@ class _SlideWidgetState extends State<SlideWidget> {
           scaleFactor: scaleFactor,
         );
       case 'image':
-        return element.src != null
-            ? Image.network(element.src!, fit: BoxFit.cover)
-            : const SizedBox.shrink();
+        return ImageElementWidget(
+          element: element,
+          width: width,
+          height: height,
+        );
       case 'video':
         bool isYouTubeUrl = element.src!.contains('youtube.com') ||
             element.src!.contains('youtu.be');
