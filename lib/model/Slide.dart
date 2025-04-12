@@ -108,9 +108,7 @@ class SlideElement {
       flipH: json['flipH'] as bool?,
       fixedRadio: json['fixedRadio'] as bool?,
       colorMask: json['colorMask'] as String?,
-      filters: (json['filters'] as Map<String, dynamic>?)?.map(
-            (k, v) => MapEntry(k, v.toString()),
-      ),
+      filters: (json['filters'] as Map<String, dynamic>?)?.cast<String, String>(),
       outline: _parseOutline(json['outline']),
       shadow: _parseShadow(json['shadow']),
       clip: json['clip'] as Map<String, dynamic>?,
@@ -191,6 +189,7 @@ class SlideElement {
     return {
       'color': outline['color'] as String? ?? '#000000',
       'width': _toDouble(outline['width'], 0.0),
+      'style': outline['style'] as String? ?? 'solid',
     };
   }
 
