@@ -41,7 +41,7 @@ class SlideElement {
   final String? path;
   final String? fill;
   final double? opacity;
-  final double rotate;
+  final double? rotate;
   final String? content;
   final double? lineHeight;
   final String? defaultColor;

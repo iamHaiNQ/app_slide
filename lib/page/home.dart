@@ -5,6 +5,7 @@ import 'package:lap26_3/widget/slide_widget.dart';
 import 'dart:convert';
 
 class HomePage extends StatefulWidget {
+
   const HomePage({super.key});
 
   @override
@@ -24,7 +25,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> loadSlides() async {
     try {
-      String jsonString = await rootBundle.loadString('assets/testImageFillter.json');
+      String jsonString = await rootBundle.loadString('assets/testRotate.json');
       List<dynamic> jsonData = jsonDecode(jsonString);
       setState(() {
         slides = jsonData.map((json) => Slide.fromJson(json)).toList();

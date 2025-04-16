@@ -1,4 +1,3 @@
-
 import 'package:better_player/better_player.dart';
 import 'package:flutter/material.dart';
 import 'package:lap26_3/model/Slide.dart';
@@ -138,26 +137,35 @@ class _SlideWidgetState extends State<SlideWidget> {
 
     print('Top: $top, Left: $left, Width: $width, Height: $height');
 
+    Widget content = SizedBox(
+      width: width,
+      height: height,
+      child: buildWidgetByType(element, width, height),
+    );
+
+    if (element.rotate != null && element.rotate != 0) {
+      content = Transform.rotate(
+        angle: element.rotate! * 3.1415926535 / 180, // độ → radian
+        child: content,
+      );
+    }
+
     return Transform.translate(
       offset: Offset(left, top),
-      child: SizedBox(
-        width: width,
-        height: height,
-        child: buildWidgetByType(element, width, height),
-      ),
+      child: content,
     );
   }
 
   Widget buildWidgetByType(SlideElement element, double width, double height) {
-    final slideWidth = MediaQuery.of(context).size.width;
-    final scaleFactor = slideWidth / 1000;
+    final slideWidth = MediaQuery.of(context).size.height;
+    final scaleFactor = 0.5 ;
     switch (element.type) {
       case 'text':
         return TextWidget(
           element: element,
+          scaleFactor: scaleFactor,
           width: width,
           height: height,
-          scaleFactor: scaleFactor,
         );
       case 'image':
         return ImageElementWidget(
@@ -186,25 +194,26 @@ class _SlideWidgetState extends State<SlideWidget> {
       case 'audio':
         return element.src != null && audioPlayers.containsKey(element.id)
             ? FittedBox(
-          fit: BoxFit.scaleDown,
-          child: IconButton(
-            icon: Icon(
-              isAudioPlaying[element.id] == true
-                  ? Icons.volume_up_outlined
-                  : Icons.volume_off_outlined,
-              size: height * 0.8,
-              color: element.color != null
-                  ? parseColor(element.color!)
-                  : Colors.black,
-            ),
-            onPressed: () => toggleAudioPlayPause(element.id),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-        )
+                fit: BoxFit.scaleDown,
+                child: IconButton(
+                  icon: Icon(
+                    isAudioPlaying[element.id] == true
+                        ? Icons.volume_up_outlined
+                        : Icons.volume_off_outlined,
+                    size: height * 0.8,
+                    color: element.color != null
+                        ? parseColor(element.color!)
+                        : Colors.black,
+                  ),
+                  onPressed: () => toggleAudioPlayPause(element.id),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              )
             : const SizedBox.shrink();
       default:
         return const SizedBox.shrink();
     }
   }
 }
+

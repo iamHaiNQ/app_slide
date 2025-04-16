@@ -1,213 +1,134 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:html/parser.dart' as html;
-import '../model/Slide.dart';
-import '../utils/color_utils.dart';
-import '../utils/html_parser.dart';
+import 'package:lap26_3/model/Slide.dart';
+import 'package:lap26_3/utils/color_utils.dart';
+import 'package:lap26_3/utils/html_parser.dart';
+import 'package:lap26_3/utils/outline_painter.dart';
+import 'package:lap26_3/utils/shape_clipper.dart';
 
-class TextWidget extends StatelessWidget {
+class TextWidget extends StatefulWidget {
   final SlideElement element;
-  final double width;
-  final double height;
   final double scaleFactor;
+  final double? width;
+  final double? height;
 
   const TextWidget({
     super.key,
     required this.element,
-    required this.width,
-    required this.height,
     required this.scaleFactor,
+    this.width,
+    this.height,
   });
 
   @override
-  Widget build(BuildContext context) {
-    final parser = HtmlParser.fromHtml(element.content ?? '');
-    final boxDecoration = BoxDecoration(
-      border: Border.all(
-        color: element.outline != null
-            ? parseColor(element.outline!['color'])
-            : Colors.transparent,
-        width: element.outline != null ? element.outline!['width'] ?? 0.0 : 0.0,
-      ),
-      borderRadius: BorderRadius.circular(4),
-      boxShadow: element.shadow != null
-          ? [
-        BoxShadow(
-          color: parseColor(element.shadow!['color']),
-          blurRadius:
-          (element.shadow!['blur'] as num?)?.toDouble() ?? 0.0,
-          offset: Offset(
-            (element.shadow!['h'] as num?)?.toDouble() ?? 0.0,
-            (element.shadow!['v'] as num?)?.toDouble() ?? 0.0,
-          ),
-        ),
-      ]
-          : null,
-    );
+  State<TextWidget> createState() => _TextWidgetState();
+}
 
-    final padding = EdgeInsets.all(element.paragraphSpace ?? 0.0);
+class _TextWidgetState extends State<TextWidget> {
+  final GlobalKey _textKey = GlobalKey();
 
-    TextStyle buildTextStyle(TextElement textElement, String fallbackFontSize) {
-      return TextStyle(
-        color: parseColor(
-            textElement.color ?? element.defaultColor ?? "#000000"),
-        fontSize: _getScaledFontSize(
-          textElement.fontSize.isNotEmpty
-              ? textElement.fontSize
-              : fallbackFontSize,
-          scaleFactor,
-        ),
-        fontFamily: textElement.fontFamily.isNotEmpty
-            ? GoogleFonts.getFont(textElement.fontFamily).fontFamily
-            : element.defaultFontName,
-        fontWeight: textElement.isBold ? FontWeight.bold : null,
-        fontStyle: textElement.isItalic ? FontStyle.italic : null,
-        decoration: TextDecoration.combine([
-          if (textElement.isStrikethrough) TextDecoration.lineThrough,
-          if (textElement.isUnderline) TextDecoration.underline,
-        ]),
-        height: element.lineHeight?.isFinite == true ? element.lineHeight : 1.0,
-        wordSpacing: (element.wordSpace ?? 1.0).toDouble(),
-      );
-    }
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final renderBox = _textKey.currentContext?.findRenderObject() as RenderBox?;
+      if (renderBox != null) {
+        final position = renderBox.localToGlobal(Offset.zero);
+        final size = renderBox.size;
 
-    TextAlign _parseTextAlign(String? align) {
-      switch (align?.toLowerCase()) {
-        case 'left':
-          return TextAlign.left;
-        case 'center':
-          return TextAlign.center;
-        case 'right':
-          return TextAlign.right;
-        case 'justify':
-          return TextAlign.justify;
-        case 'start':
-          return TextAlign.start;
-        case 'end':
-          return TextAlign.end;
-        default:
-          return TextAlign.left;
+        print('👉 HTML widget position: (${position.dx}, ${position.dy})');
+        print('👉 HTML widget size: ${size.width} x ${size.height}');
       }
-    }
+    });
+  }
 
-    if (parser.items.isEmpty && element.content != null) {
-      final document = html.parse(element.content!);
-      final textElement = TextElement();
-      if (document.body != null) {
-        textElement.parseElement(document.body!);
-        return Container(
-          width: width,
-          height: height,
-          decoration: boxDecoration,
-          padding: padding,
-          child: SingleChildScrollView(
-            child: Text(
-              textElement.text,
-              softWrap: true,
-              overflow: TextOverflow.visible,
-              maxLines: null,
-              textAlign: _parseTextAlign(textElement.textAlign),
-              style: buildTextStyle(textElement, '16px'),
+  @override
+  Widget build(BuildContext context) {
+    final shadowData = widget.element.shadow;
+    final List<Shadow> shadows = shadowData != null
+        ? [
+      Shadow(
+        color: parseColor(shadowData['color']) ?? Colors.black,
+        offset: Offset(
+          (shadowData['h']?.toDouble() ?? 0),
+          (shadowData['v']?.toDouble() ?? 0),
+        ),
+        blurRadius: shadowData['blur']?.toDouble() ?? 0.0,
+      ),
+    ]
+        : [];
+
+    final outlineData = widget.element.outline;
+    final double strokeWidth = outlineData?['width']?.toDouble() ?? 0.0;
+    final Color borderColor = parseColor(outlineData?['color'] ?? '#000000') ?? Colors.black;
+    final bool isDashed = (outlineData?['style'] ?? 'solid') == 'dashed';
+
+    final clipShape = ClipShape.rectangle;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Align(
+          alignment: Alignment.topLeft,
+          child: SizedBox(
+            width: widget.width,
+            height: widget.height,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Nền
+                ClipPath(
+                  clipper: ShapeClipper(clipShape),
+                  child: Container(
+                    color: parseColor(widget.element.fill ?? '#FFFFFF'),
+                  ),
+                ),
+
+                // Text HTML (được clip và co giãn để vừa vùng)
+                ClipPath(
+                  clipper: ShapeClipper(clipShape),
+                  child: FittedBox(
+                    fit: BoxFit.contain,
+                    child: Container(
+                      constraints: BoxConstraints(
+                        maxWidth: widget.width ?? constraints.maxWidth,
+                        maxHeight: widget.height ?? constraints.maxHeight,
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5), // Giảm padding
+                      child: HtmlParser(
+                        key: _textKey,
+                        htmlContent: widget.element.content ?? '',
+                        scaleFactor: widget.scaleFactor,
+                        defaultFontName: widget.element.defaultFontName ?? 'Arial',
+                        defaultColor: parseColor(widget.element.defaultColor ?? '#000000') ?? Colors.black,
+                        wordSpacing: widget.element.wordSpace != null && widget.element.wordSpace!.isFinite
+                            ? widget.element.wordSpace
+                            : 0.0,
+                        lineHeight: widget.element.lineHeight != null && widget.element.lineHeight!.isFinite
+                            ? widget.element.lineHeight
+                            : 1.2,
+                        paragraphSpacing: widget.element.paragraphSpace != null && widget.element.paragraphSpace!.isFinite
+                            ? widget.element.paragraphSpace
+                            : 8.0,
+                        shadows: shadows,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Viền (nếu có)
+                if (strokeWidth > 0)
+                  CustomPaint(
+                    painter: OutlinePainter(
+                      color: borderColor,
+                      strokeWidth: strokeWidth * widget.scaleFactor,
+                      dashed: isDashed,
+                      clipper: ShapeClipper(clipShape),
+                    ),
+                  ),
+              ],
             ),
           ),
         );
-      } else {
-        return const SizedBox.shrink();
-      }
-    }
-
-    return Container(
-      width: width,
-      height: height,
-      decoration: boxDecoration,
-      padding: padding,
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: parser.items.map((listItem) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: getBulletWidget(
-                      parser.listType,
-                      _getScaledFontSize(parser.listFontSize, scaleFactor),
-                    ),
-                  ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: listItem.texts.map((textElement) {
-                        return Text(
-                          textElement.text,
-                          textAlign: _parseTextAlign(textElement.textAlign),
-                          style: buildTextStyle(
-                              textElement, parser.listFontSize),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
-        ),
-      ),
+      },
     );
-  }
-
-  double _getScaledFontSize(String fontSizeStr, double scaleFactor) {
-    final baseSize = double.tryParse(fontSizeStr.replaceAll('px', '')) ?? 16;
-    return baseSize * scaleFactor;
-  }
-
-  Widget getBulletWidget(String listType, double fontSize) {
-    switch (listType.toLowerCase()) {
-      case 'disc':
-        return Container(
-          width: fontSize / 2,
-          height: fontSize / 2,
-          margin: const EdgeInsets.only(top: 6),
-          decoration: const BoxDecoration(
-            color: Colors.black,
-            shape: BoxShape.circle,
-          ),
-        );
-      case 'circle':
-        return Container(
-          width: fontSize / 2,
-          height: fontSize / 2,
-          margin: const EdgeInsets.only(top: 6),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.black, width: 1),
-            shape: BoxShape.circle,
-          ),
-        );
-      case 'square':
-        return Container(
-          width: fontSize / 2,
-          height: fontSize / 2,
-          margin: const EdgeInsets.only(top: 6),
-          color: Colors.black,
-        );
-      case 'decimal':
-        return Text(
-          '1.',
-          style: TextStyle(fontSize: fontSize),
-        );
-      default:
-        return Container(
-          width: fontSize / 2,
-          height: fontSize / 2,
-          margin: const EdgeInsets.only(top: 6),
-          decoration: const BoxDecoration(
-            color: Colors.black,
-            shape: BoxShape.circle,
-          ),
-        );
-    }
   }
 }

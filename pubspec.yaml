@@ -18,9 +18,11 @@ dependencies:
   better_player:
     git: 'https://github.com/afrahshaikh/even_better_player.git'
   youtube_player_flutter: ^9.0.4
-  html:
   google_fonts:
   cupertino_icons: ^1.0.6
+  flutter_html:
+  flutter_widget_from_html: ^0.8.5
+
 
 dev_dependencies:
   flutter_test:

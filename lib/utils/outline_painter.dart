@@ -15,7 +15,7 @@ class OutlinePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final path = clipper.getClip(size);
+    final path = clipper.getClip(size) ?? Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
     final paint = Paint()
       ..color = color
       ..strokeWidth = strokeWidth
