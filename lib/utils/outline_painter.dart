@@ -13,13 +13,17 @@ class OutlinePainter extends CustomPainter {
     this.dashed = false,
   });
 
+
   @override
   void paint(Canvas canvas, Size size) {
-    final path = clipper.getClip(size) ?? Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
+    final path = clipper.getClip(size);
     final paint = Paint()
       ..color = color
       ..strokeWidth = strokeWidth
       ..style = PaintingStyle.stroke;
+
+  print('color: $color');
+  print('strokeWidth: $strokeWidth');
 
     if (dashed) {
       _drawDashedPath(canvas, path, paint,strokeWidth);

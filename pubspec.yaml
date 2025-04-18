@@ -22,7 +22,7 @@ dependencies:
   cupertino_icons: ^1.0.6
   flutter_html:
   flutter_widget_from_html: ^0.8.5
-
+  flutter_document_picker: ^5.2.1
 
 dev_dependencies:
   flutter_test:

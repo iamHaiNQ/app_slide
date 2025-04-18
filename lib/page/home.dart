@@ -1,38 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:lap26_3/model/Slide.dart';
 import 'package:lap26_3/widget/slide_widget.dart';
-import 'dart:convert';
 
 class HomePage extends StatefulWidget {
-
-  const HomePage({super.key});
+  final List<Slide> slides;
+  const HomePage({Key? key, required this.slides}) : super(key: key);
 
   @override
   _HomePageState createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  List<Slide> slides = [];
-  late PageController _pageController;
+  late final PageController _pageController;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
-    loadSlides();
-  }
-
-  Future<void> loadSlides() async {
-    try {
-      String jsonString = await rootBundle.loadString('assets/testRotate.json');
-      List<dynamic> jsonData = jsonDecode(jsonString);
-      setState(() {
-        slides = jsonData.map((json) => Slide.fromJson(json)).toList();
-      });
-    } catch (e) {
-      print('Error loading slides: $e');
-    }
   }
 
   @override
@@ -41,9 +25,9 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  void nextSlide() {
+  void _nextSlide() {
     if (_pageController.hasClients &&
-        _pageController.page! < slides.length - 1) {
+        _pageController.page! < widget.slides.length - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeIn,
@@ -51,7 +35,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void returnSlide() {
+  void _prevSlide() {
     if (_pageController.hasClients && _pageController.page! > 0) {
       _pageController.previousPage(
         duration: const Duration(milliseconds: 300),
@@ -63,37 +47,42 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: slides.isEmpty
-          ? const Center(child: CircularProgressIndicator())
-          : Stack(
-              children: [
-                PageView.builder(
-                  controller: _pageController,
-                  itemCount: slides.length,
-                  itemBuilder: (context, index) {
-                    return SlideWidget(
-                      slide: slides[index],
-                    );
-                  },
-                ),
-                Positioned(
-                  bottom: 10,
-                  left: 10,
-                  child: ElevatedButton(
-                    onPressed: returnSlide,
-                    child: const Text('Return Slide'),
-                  ),
-                ),
-                Positioned(
-                  bottom: 10,
-                  right: 10,
-                  child: ElevatedButton(
-                    onPressed: nextSlide,
-                    child: const Text('Next Slide'),
-                  ),
-                ),
-              ],
+      body: Stack(
+        children: [
+          PageView.builder(
+            controller: _pageController,
+            itemCount: widget.slides.length,
+            itemBuilder: (context, index) {
+              return SlideWidget(slide: widget.slides[index]);
+            },
+          ),
+          Positioned(
+            top: 10,
+            left: 10,
+            child: ElevatedButton.icon(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.arrow_back),
+              label: const Text('Quay lại'),
             ),
+          ),
+          Positioned(
+            bottom: 10,
+            left: 10,
+            child: ElevatedButton(
+              onPressed: _prevSlide,
+              child: const Text('◀ Trước'),
+            ),
+          ),
+          Positioned(
+            bottom: 10,
+            right: 10,
+            child: ElevatedButton(
+              onPressed: _nextSlide,
+              child: const Text('Sau ▶'),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

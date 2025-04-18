@@ -1,16 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:lap26_3/page/home.dart';
+import 'package:lap26_3/page/json_input.dart';
 
 void main() {
-  runApp(MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: HomePage(),
-    );
-  }
+  runApp(
+    MaterialApp(
+      title: 'Slide Presenter',
+      home: const JsonInputPage(),
+    ),
+  );
 }

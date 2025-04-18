@@ -136,7 +136,6 @@ class ImageElementWidget extends StatelessWidget {
     if (element.outline != null ) {
       clipper ??= ShapeClipper(ClipShape.rectangle);
       final style = element.outline!['style']?.toLowerCase();
-      final outlineStyle = (style == 'dashed') ? 'dashed' : 'solid';
       print('Outline style: $style');
       print('Element Outline: ${element.outline}');// In ra kiểu outline để kiểm tra)
 
