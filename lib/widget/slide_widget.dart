@@ -1,11 +1,12 @@
-import 'package:better_player/better_player.dart';
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:lap26_3/model/Slide.dart';
-import 'package:lap26_3/utils/color_utils.dart';
+import 'package:lap26_3/utils/audio_time_line.dart';
 import 'package:lap26_3/widget/image_widget.dart';
 import 'package:lap26_3/widget/text_widget.dart';
-import 'package:youtube_player_flutter/youtube_player_flutter.dart';
-import 'package:just_audio/just_audio.dart';
+import 'package:lap26_3/widget/video_widget.dart';
+
+import 'audio_widget.dart';
 
 class SlideWidget extends StatefulWidget {
   final Slide slide;
@@ -17,63 +18,25 @@ class SlideWidget extends StatefulWidget {
 }
 
 class _SlideWidgetState extends State<SlideWidget> {
-  Map<String, BetterPlayerController> betterPlayerControllers = {};
-  Map<String, YoutubePlayerController> youtubeControllers = {};
+  // Quản lý các AudioPlayer cho các phần tử audio
   Map<String, AudioPlayer> audioPlayers = {};
+
+  // Theo dõi trạng thái phát của từng audio
   Map<String, bool> isAudioPlaying = {};
-  Map<String, bool> isAudioMuted = {};
 
   @override
   void initState() {
-    initializeMedia();
     super.initState();
+    initializeAudio();
   }
 
-  void toggleAudioPlayPause(String id) {
-    final player = audioPlayers[id];
-    if (player != null) {
-      setState(() {
-        if (isAudioPlaying[id] == true) {
-          player.pause();
-          isAudioPlaying[id] = false;
-        } else {
-          player.play();
-          isAudioPlaying[id] = true;
-        }
-      });
-    }
-  }
-
-  Future<void> initializeMedia() async {
+  // Khởi tạo AudioPlayer cho các phần tử audio
+  Future<void> initializeAudio() async {
     for (var element in widget.slide.elements) {
-      if (element.type == 'video' && element.src != null) {
-        bool isYouTubeUrl = element.src!.contains('youtube.com') ||
-            element.src!.contains('youtu.be');
-        if (element.isYouTubeLink == true || isYouTubeUrl) {
-          final youtubeController = YoutubePlayerController(
-            initialVideoId: YoutubePlayer.convertUrlToId(element.src!) ?? '',
-            flags: YoutubePlayerFlags(
-              autoPlay: element.autoplay ?? false,
-            ),
-          );
-          youtubeControllers[element.id] = youtubeController;
-        } else {
-          final controller = BetterPlayerController(
-            BetterPlayerConfiguration(
-              autoPlay: element.autoplay ?? false,
-            ),
-            betterPlayerDataSource: BetterPlayerDataSource(
-              BetterPlayerDataSourceType.network,
-              element.src!,
-            ),
-          );
-          betterPlayerControllers[element.id] = controller;
-        }
-      } else if (element.type == 'audio' && element.src != null) {
+      if (element.type == 'audio' && element.src != null) {
         final player = AudioPlayer();
         audioPlayers[element.id] = player;
         isAudioPlaying[element.id] = false;
-        isAudioMuted[element.id] = false;
 
         try {
           await player.setUrl(element.src!);
@@ -95,8 +58,7 @@ class _SlideWidgetState extends State<SlideWidget> {
 
   @override
   void dispose() {
-    betterPlayerControllers.forEach((_, controller) => controller.dispose());
-    youtubeControllers.forEach((_, controller) => controller.dispose());
+    // Giải phóng tất cả AudioPlayer khi widget bị hủy
     audioPlayers.forEach((_, player) => player.dispose());
     super.dispose();
   }
@@ -115,8 +77,19 @@ class _SlideWidgetState extends State<SlideWidget> {
             color: Color(int.parse(
                 widget.slide.background.color.replaceAll('#', '0xff'))),
             child: Stack(
-              children: widget.slide.elements.map((element) {
-                return buildElementContent(element, slideWidth, slideHeight);
+              // Tạo danh sách widget, bao gồm cả AudioWidget và AudioTimelineWidget cho audio
+              children: widget.slide.elements.expand((element) {
+                List<Widget> widgets = [];
+                widgets
+                    .add(buildElementContent(element, slideWidth, slideHeight));
+                // Chỉ thêm AudioTimelineWidget nếu audio đang phát
+                if (element.type == 'audio' &&
+                    element.src != null &&
+                    isAudioPlaying[element.id] == true) {
+                  widgets.add(
+                      buildTimelineContent(element, slideWidth, slideHeight));
+                }
+                return widgets;
               }).toList(),
             ),
           ),
@@ -125,6 +98,7 @@ class _SlideWidgetState extends State<SlideWidget> {
     );
   }
 
+  // Xây dựng nội dung cho từng phần tử (text, image, video, audio)
   Widget buildElementContent(
       SlideElement element, double slideWidth, double slideHeight) {
     double scaleX = slideWidth / 1000;
@@ -145,7 +119,7 @@ class _SlideWidgetState extends State<SlideWidget> {
 
     if (element.rotate != null && element.rotate != 0) {
       content = Transform.rotate(
-        angle: element.rotate! * 3.1415926535 / 180, // độ → radian
+        angle: element.rotate! * 3.1415926535 / 180, // Chuyển độ sang radian
         child: content,
       );
     }
@@ -156,9 +130,37 @@ class _SlideWidgetState extends State<SlideWidget> {
     );
   }
 
+  // Xây dựng widget timeline cho audio, đặt bên dưới AudioWidget
+  Widget buildTimelineContent(
+      SlideElement element, double slideWidth, double slideHeight) {
+    double scaleX = slideWidth / 1000;
+    double scaleY = slideHeight / 562.5;
+
+    // Định vị timeline ngay dưới AudioWidget
+    double left = element.left * scaleX;
+    double top = (element.top + (element.height ?? 0)) * scaleY;
+    double width = 300;
+    double height = 50; // Chiều cao cố định cho timeline
+
+    return Transform.translate(
+      offset: Offset(left, top),
+      child: SizedBox(
+        width: width,
+        height: height,
+        child: AudioTimelineWidget(
+          element: element,
+          audioPlayer: audioPlayers[element.id]!,
+          width: width,
+          height: height,
+        ),
+      ),
+    );
+  }
+
+  // Chọn loại widget dựa trên loại phần tử
   Widget buildWidgetByType(SlideElement element, double width, double height) {
     final slideWidth = MediaQuery.of(context).size.height;
-    final scaleFactor = 0.5 ;
+    const scaleFactor = 0.5;
     switch (element.type) {
       case 'text':
         return TextWidget(
@@ -174,46 +176,26 @@ class _SlideWidgetState extends State<SlideWidget> {
           height: height,
         );
       case 'video':
-        bool isYouTubeUrl = element.src!.contains('youtube.com') ||
-            element.src!.contains('youtu.be');
-        if ((element.isYouTubeLink == true || isYouTubeUrl) &&
-            element.src != null &&
-            youtubeControllers.containsKey(element.id)) {
-          return YoutubePlayer(
-            controller: youtubeControllers[element.id]!,
-            showVideoProgressIndicator: true,
-            progressIndicatorColor: Colors.blueAccent,
-          );
-        } else if (element.src != null &&
-            betterPlayerControllers.containsKey(element.id)) {
-          return BetterPlayer(
-            controller: betterPlayerControllers[element.id]!,
-          );
-        }
-        return const SizedBox.shrink();
+        return VideoWidget(
+          element: element,
+          width: width,
+          height: height,
+        );
       case 'audio':
-        return element.src != null && audioPlayers.containsKey(element.id)
-            ? FittedBox(
-                fit: BoxFit.scaleDown,
-                child: IconButton(
-                  icon: Icon(
-                    isAudioPlaying[element.id] == true
-                        ? Icons.volume_up_outlined
-                        : Icons.volume_off_outlined,
-                    size: height * 0.8,
-                    color: element.color != null
-                        ? parseColor(element.color!)
-                        : Colors.black,
-                  ),
-                  onPressed: () => toggleAudioPlayPause(element.id),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-              )
-            : const SizedBox.shrink();
+        return AudioWidget(
+          element: element,
+          audioPlayer: audioPlayers[element.id]!,
+          isPlaying: isAudioPlaying[element.id] ?? false,
+          onPlayPause: (isPlaying) {
+            setState(() {
+              isAudioPlaying[element.id] = isPlaying;
+            });
+          },
+          width: width,
+          height: height,
+        );
       default:
         return const SizedBox.shrink();
     }
   }
 }
-
